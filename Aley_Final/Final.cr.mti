@@ -1,0 +1,124 @@
+{C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/clock.vhd} {1 {vcom -work work -2002 -explicit -stats=none {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/clock.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_textio
+-- Compiling package CLOCKS
+-- Compiling package body CLOCKS
+-- Loading package CLOCKS
+-- Compiling entity CLOCK
+-- Compiling architecture BEHAVIOR of CLOCK
+-- Loading package CLOCKS
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Compiling entity LC3_MEMORY
+-- Compiling architecture behavioral of LC3_MEMORY
+
+} {} {}} {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/ALEY_LC3.vhd} {1 {vcom -work work -2002 -explicit -stats=none {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/ALEY_LC3.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package STD_LOGIC_SIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity ALEY_PATH
+-- Compiling architecture PATH_arch of ALEY_PATH
+
+} {} {}} {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/ALEY_COMPONENTS_LC3.vhd} {2 {vcom -work work -2002 -explicit -stats=none {C:\Users\al3y0\OneDrive\Documents\Advanced Digitial Systems\Aley_Final\ALEY_COMPONENTS_LC3.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity ALEY_MAR
+-- Compiling architecture MAR_arch of ALEY_MAR
+-- Loading package STD_LOGIC_SIGNED
+-- Compiling entity ALEY_MEMORY
+-- Compiling architecture MEMORY_arch of ALEY_MEMORY
+** Warning: C:\Users\al3y0\OneDrive\Documents\Advanced Digitial Systems\Aley_Final\ALEY_COMPONENTS_LC3.vhd(112): (vcom-1074) Non-locally static OTHERS choice is allowed only if it is the only choice of the only association.
+
+-- Compiling entity ALEY_MDR
+-- Compiling architecture MDR_arch of ALEY_MDR
+-- Compiling entity ALEY_GATE_MDR
+-- Compiling architecture GATE_MDR_arch of ALEY_GATE_MDR
+-- Compiling entity ALEY_IR
+-- Compiling architecture IR_arch of ALEY_IR
+-- Compiling entity ALEY_6SEXT
+-- Compiling architecture SEXT6_arch of ALEY_6SEXT
+-- Compiling entity ALEY_9SEXT
+-- Compiling architecture SEXT9_arch of ALEY_9SEXT
+-- Compiling entity ALEY_11SEXT
+-- Compiling architecture SEXT11_arch of ALEY_11SEXT
+-- Compiling entity ALEY_8ZEXT
+-- Compiling architecture ZEXT8_arch of ALEY_8ZEXT
+-- Compiling entity ALEY_5SEXT
+-- Compiling architecture SEXT5_arch of ALEY_5SEXT
+-- Compiling entity ALEY_A2M
+-- Compiling architecture A2M_arch of ALEY_A2M
+-- Compiling entity ALEY_MARMUX
+-- Compiling architecture MARMUX_arch of ALEY_MARMUX
+-- Compiling entity ALEY_ADDER
+-- Compiling architecture ADDER_arch of ALEY_ADDER
+-- Compiling entity ALEY_A1M
+-- Compiling architecture A1M_arch of ALEY_A1M
+-- Compiling entity ALEY_SR2MUX
+-- Compiling architecture SR2MUX_arch of ALEY_SR2MUX
+-- Compiling entity ALEY_ALU
+-- Compiling architecture ALU_arch of ALEY_ALU
+-- Compiling entity ALEY_GATE_MARMUX
+-- Compiling architecture GATE_MARMUX_arch of ALEY_GATE_MARMUX
+-- Compiling entity ALEY_GATE_ALU
+-- Compiling architecture GATE_ALU_arch of ALEY_GATE_ALU
+-- Compiling entity ALEY_NZP
+-- Compiling architecture NZP_arch of ALEY_NZP
+-- Compiling entity ALEY_PCMUX
+-- Compiling architecture PCMUX_arch of ALEY_PCMUX
+-- Compiling entity ALEY_PC
+-- Compiling architecture PC_arch of ALEY_PC
+-- Compiling entity ALEY_GATE_PC
+-- Compiling architecture GATE_PC_arch of ALEY_GATE_PC
+-- Compiling entity ALEY_16bitREG
+-- Compiling architecture reg16bit_arch of ALEY_16bitREG
+-- Compiling entity ALEY_REGARRAY
+-- Compiling architecture REGARRAY_arch of ALEY_REGARRAY
+
+} {} {}} {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/tb_ALEY_LC3.vhd} {1 {vcom -work work -2002 -explicit -stats=none {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/tb_ALEY_LC3.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package STD_LOGIC_UNSIGNED
+-- Loading package NUMERIC_STD
+-- Compiling entity tb_ALEY_LC3
+-- Compiling architecture TB1 of tb_ALEY_LC3
+-- Compiling configuration CFG_tb_ALEY_LC3
+-- Loading entity tb_ALEY_LC3
+-- Loading architecture TB1 of tb_ALEY_LC3
+-- Loading package STD_LOGIC_SIGNED
+-- Loading entity ALEY_PATH
+
+} {} {}} {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/txt_util.vhd} {1 {vcom -work work -2002 -explicit -stats=none {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/txt_util.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling package txt_util
+-- Compiling package body txt_util
+-- Loading package txt_util
+
+} {} {}} {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/util_pkg.vhd} {1 {vcom -work work -2002 -explicit -stats=none {C:/Users/al3y0/OneDrive/Documents/Advanced Digitial Systems/Aley_Final/util_pkg.vhd}
+Model Technology ModelSim PE Student Edition vcom 10.4a Compiler 2015.03 Apr  7 2015
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Compiling package util_package
+-- Compiling package body util_package
+-- Loading package util_package
+
+} {} {}}

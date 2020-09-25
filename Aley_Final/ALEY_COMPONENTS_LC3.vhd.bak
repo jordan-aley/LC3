@@ -1,0 +1,860 @@
+------------------------------------------------------------------
+--LC3 Data Path Components
+------------------------------------------------------------------
+--Components:
+--MAR
+--MEMORY
+--MDR
+--Instruction Register
+--5/6/9/11 to 16 Sign EXT
+--8 to 16 Z EXT
+--MARMUX
+--PCMUX
+--ADDR1MUX
+--ADDR2MUX
+--SR2MUX
+--ALU
+--ADDER
+--PC
+--NZP
+--Tristates for: MARMUX, ALU, MDR, and PC
+--Reg Array
+------------------------------------------------------------------
+--Generics: ADD_WIDTH, WIDTH, z8, z16, REG_ADD, E
+------------------------------------------------------------------
+--Inputs:CLK,mem_en,read_write_en,MDR_EN,MAR_EN,Gate_MDR,Gate_MARMUX,
+--	Gate_ALU,Gate_PC,RST,IR_EN,A1M_EN,SR2MUX_EN,MARMUX_EN,NZP_EN,
+--	PC_EN,REG_EN,DR_EN,SR1_EN,SR2_EN,A2M_EN,ALU_EN,PCMUX_EN,
+--	MAR_IN,MDR_IN,IR_IN,NZP_IN,PCMUX_IN,REG_IN
+------------------------------------------------------------------
+--Outputs: GATE_MDR_OUT,GATE_MARMUX_OUT,GATE_ALU_OUT,GATE_PC_OUT
+------------------------------------------------------------------
+-- Jordan Aley
+-- LC3
+-- Advanced Digital Systems and Design Fall 2019
+------------------------------------------------------------------
+
+
+------------------------------------------------------------------
+--MAR
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+entity ALEY_MAR is
+	generic(
+		ADD_WIDTH: integer := 9;
+		WIDTH: integer := 16
+);			
+	port (
+		CLK: in std_logic;
+		MAR_EN: in std_logic;
+		RST: in std_logic;
+		BUS_IN: in std_logic_vector(WIDTH-1 downto 0);
+		MAR_OUT: out std_logic_vector (ADD_WIDTH-1 downto 0)
+); 
+end ALEY_MAR;
+
+architecture MAR_arch of ALEY_MAR is
+signal S_D: std_logic_vector(ADD_WIDTH-1 downto 0);
+begin
+process(CLK)
+begin
+	if(clk'event and clk='1') then
+		if(RST='1') then
+			S_D<=(others=>'0');
+		elsif(MAR_EN='1') then
+			S_D<=BUS_IN(ADD_WIDTH-1 downto 0);
+		elsif(MAR_EN='0') then
+			S_D<=(others=>'Z');
+		else
+			S_D<=S_D;
+		end if;
+	else
+		S_D<=S_D;
+	end if;
+end process;
+MAR_OUT<=S_D;
+end MAR_arch;
+
+------------------------------------------------------------------
+--MEM
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_signed.all;
+use ieee.numeric_std.all;
+
+entity ALEY_MEMORY is
+	generic(
+		ADD_WIDTH: integer := 9;
+		WIDTH: integer := 16
+);	
+
+	port (
+		CLK: in std_logic;
+		mem_wr_rd_add: in std_logic_vector(ADD_WIDTH-1 downto 0);
+		Data_in: in std_logic_vector(WIDTH-1 downto 0);
+		read_write_en: in std_logic;
+		mem_en: in std_logic;
+		MEM_OUT: out std_logic_vector (WIDTH-1 downto 0)	
+);
+end ALEY_MEMORY;
+
+architecture MEMORY_arch of ALEY_MEMORY is
+type regary is array (integer range<>) of std_logic_vector(WIDTH-1 downto 0);
+signal data: regary(0 to(2**ADD_WIDTH)) :=(
+0=>"0010000000001001",1=>"0010001000001010",2=>"0001010000000001",3=>"0001011010000000",
+4=>"0101100000000001",5=>"0101101000000100",6=>"0011100000001011",7=>"0011101000001100",
+10=>"0000000000000011",12=>"0000000000000101",
+others=> "0000000000000000");
+
+signal SMEM_OUT: std_logic_vector(WIDTH-1 downto 0);
+begin
+MEMORY: process(CLK,read_write_en)
+begin
+
+if (CLK'event and CLK='1') then
+	if mem_en='0' then
+		SMEM_OUT <= (others=>'Z');
+	elsif read_write_en = '1' then
+		data(to_integer(unsigned(mem_wr_rd_add))) <= Data_In;
+		SMEM_OUT <= (others=>'Z');
+	elsif read_write_en='0' then
+		SMEM_OUT <= data(to_integer(unsigned(mem_wr_rd_add)));
+	end if;
+else
+	SMEM_OUT <= SMEM_OUT;
+	data <= data;
+end if;
+MEM_OUT <= SMEM_OUT;
+end process MEMORY;
+end MEMORY_arch;
+
+------------------------------------------------------------------
+--MDR
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+entity ALEY_MDR is
+	generic(
+		WIDTH: integer := 16
+);	
+	port (
+		CLK: in std_logic;
+		MDR_EN: in std_logic;
+		RST: in std_logic;
+		MDR_IN: in std_logic_vector(WIDTH-1 downto 0);
+		MEM_IN: in std_logic_vector (WIDTH-1 downto 0);
+		MDR_OUT: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_MDR;
+
+architecture MDR_arch of ALEY_MDR is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+process(CLK)
+begin
+	if(clk'event and clk='1') then
+		if(RST='1') then
+			S_D<=(others=>'0');
+		elsif(MDR_EN='1') then
+			S_D<=MDR_IN(WIDTH-1 downto 0);
+		elsif(MDR_EN='0') then
+			S_D<=MEM_IN(WIDTH-1 downto 0);
+		else
+			S_D<=S_D;
+		end if;
+	else
+		S_D<=S_D;
+	end if;
+end process;
+MDR_OUT<=S_D;
+end MDR_arch;
+
+------------------------------------------------------------------
+--GATE MDR TRISTATE
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_GATE_MDR is
+	generic(
+		WIDTH: integer := 16
+);	  
+	port (
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		EN: in std_logic;
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_GATE_MDR;
+
+architecture GATE_MDR_arch of ALEY_GATE_MDR is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+process(OP_A, EN)
+	BEGIN
+		IF (EN='1') THEN
+			S_D <= OP_A;
+		ELSIF (EN='0') THEN
+			S_D <= (others=>'Z');
+		ELSE
+			S_D <= S_D;
+		END IF;
+	END PROCESS;
+OP_Q <= S_D;
+end GATE_MDR_arch;
+
+------------------------------------------------------------------
+--IR
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_IR is  
+	
+	generic(
+		WIDTH: natural:= 16
+);
+
+	port (
+		clk: in std_logic;
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		RST: in std_logic;
+		EN: in std_logic;
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_IR;
+
+architecture IR_arch of ALEY_IR is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+process(clk)
+	BEGIN
+		IF (clk = '1' and clk'event)THEN
+			IF(RST='1')THEN
+				S_D <= (others=> '0');
+			ELSIF (EN='1')THEN
+				S_D<=OP_A;
+			ELSE
+				S_D<=S_D;
+			END IF;
+		ELSE 
+			S_D<=S_D;
+		END IF;
+	END PROCESS;
+OP_Q<=S_D;
+end IR_arch;
+
+------------------------------------------------------------------
+--6 bit SEXT
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_6SEXT is  
+	generic(
+		WIDTH: natural:= 16
+);
+	port (
+		OP_A: in std_logic_vector(5 downto 0);
+		OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_6SEXT;
+
+architecture SEXT6_arch of ALEY_6SEXT is
+signal N: std_logic_vector(5 downto 0);
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	N <= OP_A(5 downto 0);
+	S_D <= OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&OP_A(5)&N;      	    
+	OP_Q <= S_D;
+end SEXT6_arch;
+------------------------------------------------------------------
+--9 bit SEXT
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_9SEXT is  
+	generic(
+		WIDTH: natural:= 16
+);
+	port (
+		OP_A: in std_logic_vector(8 downto 0);
+		OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_9SEXT;
+
+architecture SEXT9_arch of ALEY_9SEXT is
+signal N: std_logic_vector(8 downto 0);
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	N <= OP_A(8 downto 0);
+	S_D <= OP_A(8)&OP_A(8)&OP_A(8)&OP_A(8)&OP_A(8)&OP_A(8)&OP_A(8)&N;      	    
+	OP_Q <= S_D;
+end SEXT9_arch;
+------------------------------------------------------------------
+--11 bit SEXT
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_11SEXT is 
+	generic(
+		WIDTH: natural:= 16
+); 
+	port (
+		OP_A: in std_logic_vector(10 downto 0);
+		OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_11SEXT;
+
+architecture SEXT11_arch of ALEY_11SEXT is
+signal N: std_logic_vector(10 downto 0);
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	N <= OP_A(10 downto 0);
+	S_D <= OP_A(10)&OP_A(10)&OP_A(10)&OP_A(10)&OP_A(10)&N;      	    
+	OP_Q <= S_D;
+end SEXT11_arch;
+------------------------------------------------------------------
+--8 bit 0EXT
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_8ZEXT is  
+	generic(
+		WIDTH: natural:= 16;
+		z8: std_logic_vector (7 downto 0) := (others => '0')
+);
+	port (
+		OP_A: in std_logic_vector(7 downto 0);
+		OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_8ZEXT;
+
+architecture ZEXT8_arch of ALEY_8ZEXT is
+signal N: std_logic_vector(7 downto 0);
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	N <= OP_A(7 downto 0);
+	S_D <= z8&N;
+	OP_Q <= S_D;
+end ZEXT8_arch;
+
+------------------------------------------------------------------
+--5 bit SEXT
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_5SEXT is  
+	generic(
+		WIDTH: integer:= 16
+);
+	port (
+		OP_A: in std_logic_vector(4 downto 0);
+		OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+);
+end ALEY_5SEXT;
+
+architecture SEXT5_arch of ALEY_5SEXT is
+signal N: std_logic_vector(4 downto 0);
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	N <= OP_A(4 downto 0);
+	S_D <= OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&OP_A(4)&N;      	    
+	OP_Q <= S_D;
+end SEXT5_arch;
+
+------------------------------------------------------------------
+--ADDER 2 MUX
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_A2M is
+	generic( WIDTH: INTEGER:= 16;
+		 Sel4: INTEGER:= 2;
+		 z16: std_logic_vector (15 downto 0) := (others => '0') 
+);  
+	port (
+		a: in std_logic_vector( WIDTH-1 downto 0);
+		b: in std_logic_vector( WIDTH-1 downto 0);
+		c: in std_logic_vector( WIDTH-1 downto 0);
+		d: in std_logic_vector( WIDTH-1 downto 0);
+		s: in std_logic_vector(Sel4-1 downto 0);
+		y: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_A2M;
+
+architecture A2M_arch of ALEY_A2M is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	  S_D <= a when (s = "00") else
+	       b when (s = "01") else 
+	       c when (s = "10") else
+	       d;
+y <= S_D;
+end A2M_arch;
+
+------------------------------------------------------------------
+--MAR MUX
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_MARMUX is
+	generic( WIDTH: INTEGER:= 16
+);  
+	port (
+		a: in std_logic_vector(WIDTH-1 downto 0);
+		b: in std_logic_vector(WIDTH-1 downto 0);
+		s: in std_logic;
+		y: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_MARMUX;
+
+architecture MARMUX_arch of ALEY_MARMUX is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	  S_D <= a when (s = '0') else
+	       b; 
+y <= S_D;	        
+	       
+end MARMUX_arch;
+
+------------------------------------------------------------------
+--ADDER
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_signed.all;
+use ieee.numeric_std.all;
+entity ALEY_ADDER is 
+	generic(
+		WIDTH: integer := 16
+); 
+	port (
+		OP_A, OP_B: in std_logic_vector (WIDTH-1 downto 0);
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_ADDER;
+
+architecture ADDER_arch of ALEY_ADDER is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+	S_D <= OP_A + OP_B;
+	OP_Q<=S_D;
+end ADDER_arch;
+
+------------------------------------------------------------------
+--Adder 1 MUX
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_A1M is
+generic( WIDTH: INTEGER:= 16
+);  
+port (
+	a: in std_logic_vector(WIDTH-1 downto 0);
+	b: in std_logic_vector(WIDTH-1 downto 0);
+	s: in std_logic;
+	y: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_A1M;
+
+architecture A1M_arch of ALEY_A1M is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	  S_D <= a when (s = '0') else
+	       b; 
+y <= S_D;	        
+	       
+end A1M_arch;
+
+------------------------------------------------------------------
+--SR2 MUX
+------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_SR2MUX is
+generic( WIDTH: INTEGER:= 16
+);  
+port (
+	a: in std_logic_vector(WIDTH-1 downto 0);
+	b: in std_logic_vector(WIDTH-1 downto 0);
+	s: in std_logic;
+	y: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_SR2MUX;
+
+architecture SR2MUX_arch of ALEY_SR2MUX is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	  S_D <= a when (s = '0') else
+	       b; 
+y <= S_D;	        
+	       
+end SR2MUX_arch;
+
+------------------------------------------------------------------
+--ALU
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.std_logic.signed;
+entity ALEY_ALU is 
+	generic(
+		WIDTH: integer:=16;
+		Sel4: INTEGER:= 2 
+);
+	port (
+		OP_A, OP_B: in std_logic_vector (WIDTH-1 downto 0);
+		sel: in std_logic_vector (Sel4-1 downto 0);
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_ALU;
+
+architecture ALU_arch of ALEY_ALU is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+	process(sel,OP_A,OP_B)
+	begin
+		if(sel="11")then
+			S_D <= OP_A + OP_B;
+		elsif (sel="01")then
+			S_D <= OP_A - OP_B;
+		elsif (sel="10")then
+			S_D <= OP_A and OP_B;
+		else
+			S_D <= not(OP_A);
+		end if;
+	end process;
+OP_Q <= S_D;
+end ALU_arch;
+
+------------------------------------------------------------------
+--Gate MARMUX
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_GATE_MARMUX is
+	generic(
+		WIDTH: integer := 16
+);	  
+	port (
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		EN: in std_logic;
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_GATE_MARMUX;
+
+architecture GATE_MARMUX_arch of ALEY_GATE_MARMUX is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+process(OP_A, EN)
+	BEGIN
+		IF (EN='1') THEN
+			S_D <= OP_A;
+		ELSIF (EN='0') THEN
+			S_D <= (others=>'Z');
+		ELSE
+			S_D <= S_D;
+		END IF;
+	END PROCESS;
+OP_Q <= S_D;
+end GATE_MARMUX_arch;
+
+------------------------------------------------------------------
+--Gate ALU
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_GATE_ALU is
+	generic(
+		WIDTH: integer := 16
+);	  
+	port (
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		EN: in std_logic;
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_GATE_ALU;
+
+architecture GATE_ALU_arch of ALEY_GATE_ALU is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+process(OP_A, EN)
+	BEGIN
+		IF (EN='1') THEN
+			S_D <= OP_A;
+		ELSIF (EN='0') THEN
+			S_D <= (others=>'Z');
+		ELSE
+			S_D <= S_D;
+		END IF;
+	END PROCESS;
+OP_Q <= S_D;
+end GATE_ALU_arch;
+
+------------------------------------------------------------------
+--NZP
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_NZP is  
+	generic(WIDTH: integer:=16
+);
+	port (
+		clk: in std_logic;
+		RST: in std_logic;
+		EN: in std_logic;
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		OP_NZP: out std_logic_vector (2 downto 0)
+); 
+end ALEY_NZP;
+
+architecture NZP_arch of ALEY_NZP is
+signal S_D: std_logic_vector (2 downto 0);
+begin
+process(clk)
+	BEGIN
+		IF (clk = '1' and clk'event)THEN
+			IF(RST='1')THEN
+				S_D <=(others => '0');
+			ELSIF (EN='1')THEN
+				IF (OP_A(15)='1')THEN
+					S_D <= "100";
+				ELSIF (OP_A(WIDTH-1 downto 0)="0000000000000000") THEN
+					S_D <= "010";
+				ELSE
+					S_D <= "001";
+				END IF;
+			ELSE
+				S_D <= S_D;
+			END IF;
+		ELSE 
+			S_D <= S_D;
+		END IF;
+	END PROCESS;
+OP_NZP <= S_D;
+end NZP_arch;
+
+------------------------------------------------------------------
+--PC MUX
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_PCMUX is
+	generic( WIDTH: INTEGER:= 16;
+		 Sel4: INTEGER:= 2 
+);  
+	port (
+	        a: in std_logic_vector(WIDTH-1 downto 0);
+		b: in std_logic_vector(WIDTH-1 downto 0);
+		c: in std_logic_vector(WIDTH-1 downto 0);
+		s: in std_logic_vector(Sel4-1 downto 0);
+		y: out std_logic_vector(WIDTH-1 downto 0)
+); 
+end ALEY_PCMUX;
+
+architecture PCMUX_arch of ALEY_PCMUX is
+signal S_D: std_logic_vector(WIDTH-1 downto 0);
+begin
+	  S_D <= a when (s = "00") else
+	       b when (s = "01") else 
+	       c;
+y <= S_D;
+end PCMUX_arch;
+
+------------------------------------------------------------------
+--PC
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.std_logic_unsigned.all;
+entity ALEY_PC is  
+	generic(WIDTH: integer:=16
+);
+	port (
+		clk: in std_logic;
+		RST: in std_logic;
+		EN: in std_logic;
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		OP_Bus: out std_logic_vector (WIDTH-1 downto 0);
+		OP_Inc: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_PC;
+
+architecture PC_arch of ALEY_PC is
+signal PC: std_logic_vector (WIDTH-1 downto 0);
+signal PC_Plus: std_logic_vector(WIDTH-1 downto 0);
+begin
+process(clk)
+	BEGIN
+		IF (clk = '1' and clk'event)THEN
+			IF(RST='1')THEN
+				PC <=(others => '0');
+				PC_Plus <= "0000000000000001";
+			ELSIF (EN='1')THEN
+				PC <=OP_A;
+				PC_Plus <=OP_A+1;
+			ELSE
+				PC <=PC;
+				PC_Plus <= PC_Plus;
+			END IF;
+		ELSE 
+			PC <=PC;
+			PC_Plus <= PC_Plus;
+		END IF;
+
+	END PROCESS;
+OP_Bus<=PC;
+OP_Inc<=PC_Plus;
+end PC_arch;
+
+------------------------------------------------------------------
+--Gate PC
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+entity ALEY_GATE_PC is
+	generic(
+		WIDTH: integer := 16
+);	  
+	port (
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		EN: in std_logic;
+		OP_Q: out std_logic_vector (WIDTH-1 downto 0)
+); 
+end ALEY_GATE_PC;
+
+architecture GATE_PC_arch of ALEY_GATE_PC is
+signal S_D: std_logic_vector (WIDTH-1 downto 0);
+begin
+process(OP_A, EN)
+	BEGIN
+		IF (EN='1') THEN
+			S_D <= OP_A;
+		ELSIF (EN='0') THEN
+			S_D <= (others=>'Z');
+		ELSE
+			S_D <= S_D;
+		END IF;
+	END PROCESS;
+OP_Q <= S_D;
+end GATE_PC_arch;
+
+------------------------------------------------------------------
+--ALEY_16bitREG
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164. all;
+entity ALEY_16bitREG is
+	
+	generic(
+		WIDTH: integer := 16;
+		k: std_logic:='0'
+);
+        port (
+		clk: in std_logic;
+		RST: in std_logic;
+		en:  in std_logic;
+		OP_A: in std_logic_vector(15 downto 0);
+                OP_Q: out std_logic_vector(15 downto 0)
+);
+
+end ALEY_16bitREG;
+
+architecture reg16bit_arch of ALEY_16bitREG is
+signal S_D: std_logic_vector(15 downto 0);
+begin
+   process(clk)
+          begin
+      		if (clk ='1' and clk'event)then
+			if(RST='1')then
+				S_D <=k&k&k&k&k&k&k&k&k&k&k&k&k&k&k&k;
+			elsif (en='1')then
+				S_D <= OP_A;
+			else
+				S_D <= S_D;
+			end if;
+		else
+			S_D <= S_D;
+		end if;
+	end process;
+OP_Q <= S_D;
+end reg16bit_arch;
+
+------------------------------------------------------------------
+--REG ARRAY
+------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+entity ALEY_REGARRAY is 
+	generic(
+		WIDTH: integer:=16;
+		REG_ADD: integer:=3;
+		E: natural:= 8
+);
+	port (
+		CLK: in std_logic;
+		OP_A: in std_logic_vector (WIDTH-1 downto 0);
+		DR: in std_logic_vector(REG_ADD-1 downto 0);
+		LD_REG: in std_logic; --enable
+		RST: in std_logic;
+		SR1: in std_logic_vector (REG_ADD-1 downto 0);
+		SR2: in std_logic_vector (REG_ADD-1 downto 0);
+		OP_Q1: out std_logic_vector (WIDTH-1 downto 0);
+		OP_Q2: out std_logic_vector (WIDTH-1 downto 0)
+);
+end ALEY_REGARRAY;
+
+architecture REGARRAY_arch of ALEY_REGARRAY is
+type regary is array (E-1 downto 0) of std_logic_vector(WIDTH-1 downto 0);
+signal sEN: std_logic_vector(E-1 downto 0);
+signal sFF: regary;
+
+component ALEY_16bitREG
+generic(WIDTH: integer:= 16);
+port(	
+	CLK: in std_logic;
+	RST: in std_logic;
+	EN: in std_logic;
+	OP_A: in std_logic_vector(WIDTH-1 downto 0);
+	OP_Q: out std_logic_vector(WIDTH-1 downto 0)
+);
+end component;
+
+begin
+	p0:process (DR, LD_REG)
+	begin
+		sEN <= (sEN'range=> '0');
+		sEN( to_integer(unsigned(DR))) <= LD_REG;
+	end process;
+	g0 : for j in 0 to (E-1) generate
+		regh0 : ALEY_16bitREG
+			port map (clk,RST,sEN(j),OP_A,sFF(j));
+	end generate;
+OP_Q1 <= sFF(to_integer(unsigned(SR1)));
+OP_Q2 <= sFF(to_integer(unsigned(SR2)));
+end REGARRAY_arch;
+
